@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation Alpha – Live Leaderboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
+
+  :root {
+    --dhl-yellow: #FFCC00;
+    --dhl-red: #D40511;
+    --cod-dark: #0A0A0A;
+    --cod-panel: #1A1A1A;
+    --cod-border: #2A2A2A;
+    --alpha-color: #FFCC00;
+    --bravo-color: #00BFFF;
+    --charlie-color: #39FF14;
+    --delta-color: #FF4500;
+    --text-main: #F0F0F0;
+    --text-muted: #888;
+    --medal-gold: #FFD700;
+    --medal-silver: #C0C0C0;
+    --medal-bronze: #CD7F32;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--cod-dark);
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text-main);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 10% 20%, rgba(212,5,17,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 80%, rgba(255,204,0,0.06) 0%, transparent 50%);
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0D0D0D 0%, #1A0A00 50%, #0D0D0D 100%);
+    border-bottom: 2px solid var(--dhl-yellow);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 30px rgba(255,204,0,0.15);
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .dhl-badge {
+    background: var(--dhl-red);
+    color: var(--dhl-yellow);
+    font-family: 'Orbitron', monospace;
+    font-weight: 900;
+    font-size: 14px;
+    padding: 6px 12px;
+    letter-spacing: 2px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .op-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--dhl-yellow);
+    text-shadow: 0 0 20px rgba(255,204,0,0.5);
+    letter-spacing: 3px;
+  }
+  .op-subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 4px; text-transform: uppercase; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .mission-status { font-size: 11px; color: #39FF14; letter-spacing: 3px; text-transform: uppercase; }
+  .mission-status::before { content: '● '; animation: blink 1.5s infinite; }
+  .viewer-badge {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--dhl-yellow);
+    background: rgba(255,204,0,0.1);
+    border: 1px solid rgba(255,204,0,0.3);
+    padding: 2px 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: inline-block;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── GIF HERO ── */
+  .gif-hero {
+    width: 100%;
+    max-height: 340px;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 3px solid var(--dhl-yellow);
+  }
+  .gif-hero img {
+    width: 100%;
+    height: 340px;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+  .gif-hero-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: linear-gradient(to top, var(--cod-dark), transparent);
+  }
+  .gif-hero-tag {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid var(--dhl-yellow);
+    color: var(--dhl-yellow);
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 10px;
+    letter-spacing: 2px;
+  }
+
+  /* ── MAIN ── */
+  main { padding: 24px 28px; max-width: 1000px; margin: 0 auto; }
+
+  .section-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dhl-yellow);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--dhl-yellow), transparent); }
+
+  /* ── LEADERBOARD ── */
+  .leaderboard-wrap { margin-bottom: 32px; }
+  .leaderboard-table { width: 100%; border-collapse: collapse; }
+  .leaderboard-table th {
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    text-align: left;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid var(--cod-border);
+  }
+  .leaderboard-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .leaderboard-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .lb-rank { font-family: 'Orbitron', monospace; font-size: 22px; font-weight: 900; color: var(--text-muted); width: 50px; }
+  .lb-squad-name { font-family: 'Orbitron', monospace; font-size: 14px; }
+  .lb-bar-cell { width: 220px; }
+  .lb-bar-bg { height: 5px; background: rgba(255,255,255,0.06); margin-top: 6px; }
+  .lb-bar-fill { height: 5px; transition: width 1s ease; }
+  .lb-xp { font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 900; text-align: right; }
+  .lb-rank-name { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .lb-medals-count { font-size: 16px; letter-spacing: 2px; }
+
+  /* ── SQUAD MEDALS GRID ── */
+  .medals-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .medals-card {
+    background: var(--cod-panel);
+    border: 1px solid var(--cod-border);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .medals-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--squad-color);
+    box-shadow: 0 0 10px var(--squad-color);
+  }
+  .medals-card-name {
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--squad-color);
+    margin-bottom: 12px;
+    padding-left: 6px;
+  }
+  .medals-row { display: flex; gap: 12px; flex-wrap: wrap; padding-left: 6px; }
+  .medal-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .medal-icon {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 2px solid transparent;
+    transition: all 0.3s;
+  }
+  .medal-icon.unlocked { border-color: var(--squad-color); box-shadow: 0 0 12px var(--squad-color); }
+  .medal-icon.locked { filter: grayscale(1); opacity: 0.2; border-color: var(--cod-border); }
+  .medal-name { font-size: 9px; color: var(--text-muted); text-align: center; max-width: 50px; line-height: 1.2; }
+  .medal-name.unlocked-text { color: var(--squad-color); }
+
+  /* ── REFRESH NOTE ── */
+  .refresh-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+    padding: 10px;
+    border: 1px solid var(--cod-border);
+  }
+  .refresh-note span { color: var(--dhl-yellow); }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cod-dark); }
+  ::-webkit-scrollbar-thumb { background: var(--cod-border); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="dhl-badge">DHL</div>
+    <div>
+      <div class="op-title">OPERATION ALPHA</div>
+      <div class="op-subtitle">Live Squad Leaderboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="mission-status">MISSION ACTIVE</div>
+    <div class="viewer-badge">👁 VIEW ONLY</div>
+  </div>
+</header>
+
+<!-- GIF HERO -->
+<div class="gif-hero">
+  <img src="Untitled_design.gif" alt="Operation Alpha" />
+  <div class="gif-hero-overlay"></div>
+  <div class="gif-hero-tag">⚡ MISSION ACTIVE</div>
+</div>
+
+<main>
+
+  <div class="refresh-note">Scores update <span>live in real time</span> — no need to refresh</div>
+
+  <!-- LEADERBOARD -->
+  <div class="leaderboard-wrap">
+    <div class="section-title">🏆 Tactical Leaderboard</div>
+    <div style="background:var(--cod-panel);border:1px solid var(--cod-border);">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Squad</th>
+            <th>XP Progress</th>
+            <th style="text-align:right">Total XP</th>
+            <th>Rank</th>
+            <th>Medals</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MEDALS -->
+  <div class="section-title">🏅 Squad Medals</div>
+  <div class="medals-grid" id="medalsGrid"></div>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyANLBion38r3RMLcizLYzM-GKpbCvkSKZw",
+  authDomain: "cs-operation-alpha.firebaseapp.com",
+  databaseURL: "https://cs-operation-alpha-default-rtdb.firebaseio.com",
+  projectId: "cs-operation-alpha",
+  storageBucket: "cs-operation-alpha.firebasestorage.app",
+  messagingSenderId: "599142962917",
+  appId: "1:599142962917:web:0776080960cf3bfa5d260c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const SQUADS_CONFIG = [
+  { id:'alpha',   name:'SQUAD ALPHA',   sub:'EXPRESS',   motto:'"Speed Wins Wars"',      color:'#FFCC00', emoji:'⚡' },
+  { id:'bravo',   name:'SQUAD BRAVO',   sub:'LIGHTNING', motto:'"Strike Fast, Strike Hard"', color:'#00BFFF', emoji:'🌩' },
+  { id:'charlie', name:'SQUAD CHARLIE', sub:'AIRBORNE',  motto:'"Sky\'s the Limit"',     color:'#39FF14', emoji:'🦅' },
+  { id:'delta',   name:'SQUAD DELTA',   sub:'FALCON',    motto:'"Precision. Execution. Victory."', color:'#FF4500', emoji:'🎯' },
+];
+
+const RANKS = [
+  { min:0,    max:100,  name:'RECRUIT' },
+  { min:101,  max:250,  name:'SPECIALIST' },
+  { min:251,  max:500,  name:'CORPORAL' },
+  { min:501,  max:750,  name:'SERGEANT' },
+  { min:751,  max:1000, name:'LIEUTENANT' },
+  { min:1001, max:Infinity, name:'COMMANDER' },
+];
+
+const MEDALS_CONFIG = [
+  { id:'firstBlood',  name:'FIRST BLOOD',    icon:'🩸' },
+  { id:'upsellNinja', name:'UPSELL NINJA',   icon:'🥷' },
+  { id:'rapidFire',   name:'RAPID FIRE',     icon:'🔥' },
+  { id:'hearts',      name:'HEARTS & MINDS', icon:'💛' },
+  { id:'juggernaut',  name:'JUGGERNAUT',     icon:'💪' },
+];
+
+function defaultState() {
+  const state = {};
+  SQUADS_CONFIG.forEach(s => {
+    state[s.id] = { xp: 0, medals: {} };
+    MEDALS_CONFIG.forEach(m => state[s.id].medals[m.id] = false);
+  });
+  return state;
+}
+
+function getRank(xp) {
+  return RANKS.find(r => xp >= r.min && xp <= r.max) || RANKS[RANKS.length-1];
+}
+
+function renderLeaderboard(STATE) {
+  const sorted = [...SQUADS_CONFIG].sort((a,b) => STATE[b.id].xp - STATE[a.id].xp);
+  const maxXP = Math.max(...sorted.map(s => STATE[s.id].xp), 1);
+  const rankEmoji = ['🥇','🥈','🥉','4'];
+
+  document.getElementById('leaderboardBody').innerHTML = sorted.map((squad, i) => {
+    const xp = STATE[squad.id].xp;
+    const rank = getRank(xp);
+    const barPct = Math.round((xp / maxXP) * 100);
+    const medals = MEDALS_CONFIG.filter(m => STATE[squad.id].medals[m.id]).map(m => m.icon).join(' ');
+    return `
+      <tr>
+        <td class="lb-rank">${rankEmoji[i] || i+1}</td>
+        <td>
+          <span class="lb-squad-name" style="color:${squad.color}">${squad.emoji} ${squad.name}</span><br>
+          <span style="font-size:11px;color:var(--text-muted)">${squad.sub} · ${squad.motto}</span>
+        </td>
+        <td class="lb-bar-cell">
+          <div style="font-size:10px;color:var(--text-muted)">${barPct}% to max</div>
+          <div class="lb-bar-bg">
+            <div class="lb-bar-fill" style="width:${barPct}%;background:${squad.color};box-shadow:0 0 6px ${squad.color}"></div>
+          </div>
+        </td>
+        <td class="lb-xp" style="color:${squad.color}">${xp.toLocaleString()}</td>
+        <td><div class="lb-rank-name">${rank.name}</div></td>
+        <td class="lb-medals-count">${medals || '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderMedals(STATE) {
+  document.getElementById('medalsGrid').innerHTML = SQUADS_CONFIG.map(squad => {
+    const medalsHTML = MEDALS_CONFIG.map(m => {
+      const unlocked = STATE[squad.id].medals[m.id];
+      return `
+        <div class="medal-slot">
+          <div class="medal-icon ${unlocked ? 'unlocked' : 'locked'}">${m.icon}</div>
+          <div class="medal-name ${unlocked ? 'unlocked-text' : ''}">${m.name}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="medals-card" style="--squad-color:${squad.color}">
+        <div class="medals-card-name">${squad.emoji} ${squad.name}</div>
+        <div class="medals-row">${medalsHTML}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAll() {
+  const STATE = loadState();
+  renderLeaderboard(STATE);
+  renderMedals(STATE);
+}
+
+// Listen for real-time updates from Firebase
+onValue(ref(db, 'squads'), (snapshot) => {
+  const data = snapshot.val();
+  const STATE = data || defaultState();
+  renderLeaderboard(STATE);
+  renderMedals(STATE);
+});
+</script>
+</body>
+</html>
